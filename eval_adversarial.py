@@ -1,72 +1,73 @@
-import numpy as np
+import tensorflow as tf
+import keras.backend.tensorflow_backend as K
+import numpy
 import argparse
-import theano
-import theano.tensor as T
-
-import keras
-from keras.datasets import mnist 
 from keras.models import model_from_json
-from keras import backend
+from keras.datasets import mnist
 from keras.utils import np_utils
-
+from mnist_add_rbf import add_rbf_layer
+from keras.models import model_from_json
+from keras.models import load_model
 from rbflayer import RBFLayer
-from initializer import InitFromFile
 
-#from cleverhans.utils_mnist import data_mnist
-from cleverhans.utils_th import th_model_eval, batch_eval
-from cleverhans.attacks_th import fgsm
+from cleverhans.attacks import FastGradientMethod
+from cleverhans.dataset import MNIST
+from cleverhans.loss import CrossEntropy
+from cleverhans.train import train
+from cleverhans.utils import AccuracyReport
+from cleverhans.utils_keras import cnn_model
+from cleverhans.utils_keras import KerasModelWrapper
+from cleverhans.utils_tf import model_eval
+from cleverhans.evaluation import batch_eval
+from cleverhans.attacks_tf import fgsm
 
-import matplotlib.pyplot as plt 
 
-
-def eval(model_name, X_train, Y_train, X_test, Y_test, cnn=False):
+def eval(sess, model_name, X_train, Y_train, X_test, Y_test, cnn=False, rbf=False):
     """ Load model saved in model_name.json and model_name_weights.h5 and 
     evaluate its accuracy on legitimate test samples and adversarial samples.
     Use cnn=True if the model is CNN based.
     """
-    
-    if not hasattr(backend, "theano"):
-        raise RuntimeError("Requires keras to be configured"
-                           " to use the Theano backend.")
 
-    # Image dimensions ordering should follow the Theano convention
-    if keras.backend.image_dim_ordering() != 'th':
-        keras.backend.set_image_dim_ordering('th')
-        print("INFO: '~/.keras/keras.json' sets 'image_dim_ordering' to 'tf', temporarily setting to 'th'")
-
-    
-    # Define input Theano placeholder
-    if cnn:
-        x_shape = (None, 28, 28, 1)
-        x = T.tensor4('x')
-    else:
-        x_shape = (None, 784)
-        x = T.matrix('x')
-        
-    y_shape = (None,10)
-    y = T.matrix('y')
-
-    
     # load saved model
     print("Load model ... ")
-    model = load_model("models/{}.h5".format(input_model_name))
+    '''
+    json = open('models/{}.json'.format(model_name), 'r')
+    model = json.read()
+    json.close()
+    loaded_model = model_from_json(model)
+    loaded_model.load_weights("models/{}_weights.h5".format(model_name))
+    '''
+    if rbf:
+        loaded_model = load_model("models/{}.h5".format(model_name), custom_objects={'RBFLayer': RBFLayer})
+    else:
+        loaded_model = load_model("models/{}.h5".format(model_name))
 
-    model.build(x_shape)
-    model.load_weights("models/{}_weights.h5".format(model_name))
-    predictions = model(x)
-    print("ok")
-            
-    accuracy = th_model_eval(x, y, predictions, X_test, Y_test, { "batch_size" : 128 })
+    # Set placeholders
+    if cnn:
+        x = tf.placeholder(tf.float32, shape=(None, 28, 28, 1))
+    else:
+        x = tf.placeholder(tf.float32, shape=(None, 784))
+
+    y = tf.placeholder(tf.float32, shape=(None, 10))
+
+    predictions = loaded_model(x)
+    
+    accuracy = model_eval(sess, x, y, predictions, X_test, Y_test, args={ "batch_size" : 128 })
     print('Test accuracy on legitimate test examples: ' + str(accuracy))
 
     # Craft adversarial examples using Fast Gradient Sign Method (FGSM)
-    adv_x = fgsm(x, predictions, eps=0.3)
-    X_test_adv, = batch_eval([x], [adv_x], [X_test], { "batch_size" : 128 })
-    assert X_test_adv.shape[0] == 10000, X_test_adv.shape
+    wrap = KerasModelWrapper(loaded_model)
+    fgsm = FastGradientMethod(wrap, sess=sess)
+    fgsm_params = {'eps': 0.3,
+                   'targeted': predictions}
+    adv_x = fgsm.generate(x, **fgsm_params)
+    adv_x = tf.stop_gradient(adv_x)
+    #X_test_adv, = batch_eval(sess, [x], [adv_x], [X_test], batch_size=128)
+    predictions_adv = loaded_model(adv_x)
     
     # Evaluate the accuracy of the MNIST model on adversarial examples
-    accuracy = th_model_eval(x, y, predictions, X_test_adv, Y_test, { "batch_size" : 128 })
-    print('Test accuracy on adversarial examples: ' + str(accuracy)) 
+    accuracy = model_eval(sess, x, y, predictions_adv, X_test, Y_test, args={ "batch_size" : 128 })
+    print('Test accuracy on adversarial test examples: ' + str(accuracy))
 
 
 
@@ -76,10 +77,20 @@ if __name__ == '__main__':
     parser.add_argument('model_name', metavar='model_name', type=str,
                         help='model saved in model_name.json and model_name_weights.h5')
     parser.add_argument('--cnn', action='store_true', help='cnn type network (2d input)')
+    parser.add_argument('--rbf', action='store_true', help='true if model contains rbf layer')
     
     args = parser.parse_args()
     model_name= args.model_name
     cnn = args.cnn
+    rbf = args.rbf
+
+    # Setup a TF session
+    if not hasattr(K, "tf"):
+        raise RuntimeError("This tutorial requires keras to be configured"
+                       " to use the TensorFlow backend.")
+
+    sess = tf.Session()
+    K.set_session(sess)
     
     # Get MNIST test data
     (X_train, y_train), (X_test, y_test) = mnist.load_data()
@@ -100,4 +111,4 @@ if __name__ == '__main__':
     Y_train = np_utils.to_categorical(y_train, 10)
     Y_test = np_utils.to_categorical(y_test, 10)
 
-    eval(model_name, X_train, Y_train, X_test, Y_test, cnn)
+    eval(sess, model_name, X_train, Y_train, X_test, Y_test, cnn, rbf)

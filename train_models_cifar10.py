@@ -50,7 +50,7 @@ def cnn(model_name, x_train, y_train, x_test, y_test):
               epochs=100,
               batch_size=128,
               validation_data=(x_test, y_test),
-              verbose=0)
+              verbose=1)
     score = cnn.evaluate(x_test, y_test, batch_size=128)
     print("Test accuracy: ", score)
     cnn.save("models/{}_cifar10.h5".format(model_name))

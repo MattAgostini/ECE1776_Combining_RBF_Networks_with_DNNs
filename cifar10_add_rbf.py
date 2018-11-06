@@ -35,8 +35,8 @@ def add_rbf_layer(model, betas, X_train, Y_train, X_test, Y_test):
 
     rbflayer = RBFLayer(300, betas=betas)
     newmodel.add(rbflayer)
-    newmodel.add(Dense(10, use_bias=False, name="dense_rbf", activation='softmax'))
-    #newmodel.add(Activation('softmax', name="Activation_rbf"))
+    newmodel.add(Dense(10, use_bias=False, name="dense_rbf"))
+    newmodel.add(Activation('softmax', name="Activation_rbf"))
 
     newmodel.compile(loss='categorical_crossentropy',
                      optimizer=RMSprop(),
@@ -49,8 +49,9 @@ def add_rbf_layer(model, betas, X_train, Y_train, X_test, Y_test):
 
     newmodel.fit(X_train, Y_train,
                  batch_size=128,
-                 epochs=3,
-                 verbose=1)
+                 epochs=10,
+                 verbose=1,
+                 validation_data=(X_test, Y_test))
 
 
     Y_pred = newmodel.predict(X_test)

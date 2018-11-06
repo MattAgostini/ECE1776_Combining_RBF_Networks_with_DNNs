@@ -1,6 +1,6 @@
 import tensorflow as tf
 import keras.backend.tensorflow_backend as K
-import numpy
+import numpy as np
 import argparse
 from keras.models import model_from_json
 from keras.datasets import mnist
@@ -51,22 +51,31 @@ def eval(sess, model_name, X_train, Y_train, X_test, Y_test, cnn=False, rbf=Fals
     y = tf.placeholder(tf.float32, shape=(None, 10))
 
     predictions = loaded_model(x)
-    
+
     accuracy = model_eval(sess, x, y, predictions, X_test, Y_test, args={ "batch_size" : 128 })
     print('Test accuracy on legitimate test examples: ' + str(accuracy))
 
     # Craft adversarial examples using Fast Gradient Sign Method (FGSM)
+    # Using functions from /cleverhans/attacks_tf.py
+    # Will be deprecated next year
+    adv_x = fgsm(x, predictions, eps=0.3)
+    X_test_adv, = batch_eval(sess, [x], [adv_x], [X_test], batch_size=128)
+
+    # Using functions from /cleverhans/attacks.py (as specified by creators)
+    # Does not work at the moment
+    '''
     wrap = KerasModelWrapper(loaded_model)
     fgsm = FastGradientMethod(wrap, sess=sess)
-    fgsm_params = {'eps': 0.3,
-                   'targeted': predictions}
+    fgsm_params = {'eps': 0.3}
+                   #'y': y}
     adv_x = fgsm.generate(x, **fgsm_params)
     adv_x = tf.stop_gradient(adv_x)
-    #X_test_adv, = batch_eval(sess, [x], [adv_x], [X_test], batch_size=128)
+    X_test_adv, = batch_eval(sess, [x], [adv_x], [X_test], batch_size=128)
     predictions_adv = loaded_model(adv_x)
+    '''
     
     # Evaluate the accuracy of the MNIST model on adversarial examples
-    accuracy = model_eval(sess, x, y, predictions_adv, X_test, Y_test, args={ "batch_size" : 128 })
+    accuracy = model_eval(sess, x, y, predictions, X_test_adv, Y_test, args={ "batch_size" : 128 })
     print('Test accuracy on adversarial test examples: ' + str(accuracy))
 
 
@@ -86,7 +95,7 @@ if __name__ == '__main__':
 
     # Setup a TF session
     if not hasattr(K, "tf"):
-        raise RuntimeError("This tutorial requires keras to be configured"
+        raise RuntimeError("This python file requires keras to be configured"
                        " to use the TensorFlow backend.")
 
     sess = tf.Session()

@@ -21,7 +21,7 @@ output - output model to be saved in 'rbfmodels' directory
 
 3. Run eval_adversarial
 
-This will run an FGSM attack on an input network
+This will run an FGSM attack on an input network.
 
 Usage: eval_adversarial input_model [--cnn] [--rbf]
 
@@ -30,5 +30,7 @@ Use --rbf if the input network contains an RBF layer
 Use --cnn if the input network is a CNN
 
 Scripts:
-run.sh - Currently trains multiple stacked RBF networks with various Beta initializations
+run.sh - Currently trains multiple stacked RBF networks with various Beta initializations. Output goes to run_output directory
+run_eval.sh - Currently tests trained models on a given adversarial attack (FSGM at the moment). Output goes to eval_output directory
+stat.sh - Currently in progress.........
 

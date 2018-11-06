@@ -101,10 +101,10 @@ if __name__ == "__main__":
     newmodel = add_rbf_layer(model, betas, X_train, Y_train, X_test, Y_test)
 
     # save new model to file 
-    newmodel.save("models/{}.h5".format(output_model_name))
+    newmodel.save("rbfmodels/{}.h5".format(output_model_name))
 
     print("---test----")
-    m = load_model("models/{}.h5".format(output_model_name), custom_objects={'RBFLayer': RBFLayer})
+    m = load_model("rbfmodels/{}.h5".format(output_model_name), custom_objects={'RBFLayer': RBFLayer})
 
     Y_pred = m.predict(X_test)
     print("Test Accuracy: ", accuracy_score(Y_pred, Y_test)) 

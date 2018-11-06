@@ -16,7 +16,7 @@ from cleverhans.loss import CrossEntropy
 from cleverhans.train import train
 from cleverhans.utils import AccuracyReport
 from cleverhans.utils_keras import cnn_model
-from cleverhans.utils_keras import KerasModelWrapper
+from customWrapper import KerasModelWrapper
 from cleverhans.utils_tf import model_eval
 from cleverhans.evaluation import batch_eval
 from cleverhans.attacks_tf import fgsm
@@ -58,24 +58,20 @@ def eval(sess, model_name, X_train, Y_train, X_test, Y_test, cnn=False, rbf=Fals
     # Craft adversarial examples using Fast Gradient Sign Method (FGSM)
     # Using functions from /cleverhans/attacks_tf.py
     # Will be deprecated next year
-    adv_x = fgsm(x, predictions, eps=0.3)
-    X_test_adv, = batch_eval(sess, [x], [adv_x], [X_test], batch_size=128)
+    # adv_x = fgsm(x, predictions, eps=0.3)
+    # X_test_adv, = batch_eval(sess, [x], [adv_x], [X_test], batch_size=128)
 
     # Using functions from /cleverhans/attacks.py (as specified by creators)
-    # Does not work at the moment
-    '''
+
     wrap = KerasModelWrapper(loaded_model)
     fgsm = FastGradientMethod(wrap, sess=sess)
     fgsm_params = {'eps': 0.3}
-                   #'y': y}
     adv_x = fgsm.generate(x, **fgsm_params)
     adv_x = tf.stop_gradient(adv_x)
-    X_test_adv, = batch_eval(sess, [x], [adv_x], [X_test], batch_size=128)
-    predictions_adv = loaded_model(adv_x)
-    '''
-    
+    preds_adv = loaded_model(adv_x)
+
     # Evaluate the accuracy of the MNIST model on adversarial examples
-    accuracy = model_eval(sess, x, y, predictions, X_test_adv, Y_test, args={ "batch_size" : 128 })
+    accuracy = model_eval(sess, x, y, preds_adv, X_test, Y_test, args={ "batch_size" : 128 })
     print('Test accuracy on adversarial test examples: ' + str(accuracy))
 
 

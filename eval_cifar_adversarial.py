@@ -38,7 +38,7 @@ def eval(sess, model_name, X_train, Y_train, X_test, Y_test, cnn=False, rbf=Fals
     loaded_model.load_weights("models/{}_weights.h5".format(model_name))
     '''
     if rbf:
-        loaded_model = load_model("models/{}.h5".format(model_name), custom_objects={'RBFLayer': RBFLayer})
+        loaded_model = load_model("rbfmodels/{}.h5".format(model_name), custom_objects={'RBFLayer': RBFLayer})
     else:
         loaded_model = load_model("models/{}.h5".format(model_name))
 

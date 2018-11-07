@@ -92,6 +92,18 @@ def eval(sess, model_name, X_train, Y_train, X_test, Y_test, cnn=False, rbf=Fals
     print('Test accuracy on adversarial test examples: ' + str(accuracy))
 
     # Craft adversarial examples using Jacobian-based Saliency Map Approach (JSMA)
+    wrap = KerasModelWrapper(loaded_model)
+    jsma = SaliencyMapMethod(wrap, sess=sess)
+    jsma_params = {'theta': 1., 'gamma': 1,
+                   'clip_min': 0., 'clip_max': 1.,
+                   'y_target': None}
+    adv_x = jsma.generate(x, **jsma_params)
+    adv_x = tf.stop_gradient(adv_x)
+    preds_adv = loaded_model(adv_x)
+
+    accuracy = model_eval(sess, x, y, preds_adv, X_test, Y_test, args={ "batch_size" : 512 })
+    print('Test accuracy on adversarial test examples: ' + str(accuracy))
+    '''
     report = AccuracyReport()
     viz_enabled=VIZ_ENABLED
     source_samples=SOURCE_SAMPLES
@@ -196,7 +208,8 @@ def eval(sess, model_name, X_train, Y_train, X_test, Y_test, cnn=False, rbf=Fals
       #adv_x = jsma(sess, x, predictions, 10, X_test, Y_test, 0, 0.5, 0, 1)
       #X_test_adv, = batch_eval(sess, [x], [adv_x], [X_test], batch_size=128)
       #accuracy = model_eval(sess, x, y, predictions, X_test_adv, Y_test, args={ "batch_size" : 128 })
-
+    '''
+    sess.close()
 
 if __name__ == '__main__':
 

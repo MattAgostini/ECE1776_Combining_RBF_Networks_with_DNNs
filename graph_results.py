@@ -13,55 +13,65 @@ t_count, a_count = 0, 0
 
 mnist_mlprbf_filenames = ('mnist_mlprbf_0.01', 'mnist_mlprbf_0.1', 'mnist_mlprbf_1.0', 'mnist_mlprbf_2.0', 'mnist_mlprbf_3.0', 'mnist_mlprbf_5.0', 'mnist_mlprbf_10.0', )
 
-count = 0
-for filename in mnist_mlprbf_filenames:
-    if "mnist_mlprbf_" in filename:
-        print (filename)
-        file = open("eval_output/"+filename+"_adversarial.txt", 'r')
-        
-        for line in file:
+datasets = ('mnist', 'cifar10', 'imagenet')
+modelArchs = ('mlprbf', 'cnnrbf')
 
-            if not line.startswith("Test accuracy"):
-                continue
+for data in datasets:
+    for arch in modelArchs:
+        for beta in betas:
+            filename = data+"_"+arch+"_"+beta
+            file = open("eval_output/"+filename+"_adversarial.txt", 'r')
 
-            acc = float(line.split(":")[1])
+            for line in file:
 
-            if line.startswith("Test accuracy on adversarial"):
-                advers.append(100*acc)
-                a_count += 1
-                continue
+                if not line.startswith("Test accuracy"):
+                    continue
 
-            if line.startswith("Test accuracy on legitimate"):
-                test.append(100*acc)
-                t_count += 1
-                continue
+                acc = float(line.split(":")[1])
+
+                if line.startswith("Test accuracy on adversarial"):
+                    advers.append(100*acc)
+                    a_count += 1
+                    continue
+
+                if line.startswith("Test accuracy on legitimate"):
+                    test.append(100*acc)
+                    t_count += 1
+                    continue
             
-        assert t_count == a_count
+            assert t_count == a_count
         
-        print(np.mean(test), np.std(test), np.min(test), np.max(test))
-        print(np.mean(advers), np.std(advers), np.min(advers), np.max(advers))
-        testAccuracy.append(np.mean(test))
-        adversarialAccuracy.append(np.mean(advers))
-        test, advers = [], []  
-        t_count, a_count = 0, 0
-        count = count + 1
+            print(np.mean(test), np.std(test), np.min(test), np.max(test))
+            print(np.mean(advers), np.std(advers), np.min(advers), np.max(advers))
+            testAccuracy.append(np.mean(test))
+            adversarialAccuracy.append(np.mean(advers))
+            test, advers = [], []  
+            t_count, a_count = 0, 0
 
 
-plt.bar(betas, adversarialAccuracy, align='center')
-plt.xticks(y_pos, betas)
-plt.ylabel('Accuracy')
-plt.ylim(0,100)
-plt.title('Accuracy on Adversarial Samples')
-#plt.show()
-plt.savefig('fig/mnist_mlprbf_adversarial.png')
+        plt.bar(betas, adversarialAccuracy, align='center')
+        plt.xticks(y_pos, betas)
+        plt.ylabel('Accuracy')
+        plt.ylim(0,100)
+        plt.title('Accuracy on Adversarial Samples')
+        #plt.show()
+        plt.savefig('fig/'+data+'_'+arch+'_adversarial.png')
 
-plt.bar(betas, testAccuracy, align='center')
-plt.xticks(y_pos, betas)
-plt.ylabel('Accuracy')
-plt.ylim(0,100)
-plt.title('Accuracy on Legitimate Samples')
-#plt.show()
-plt.savefig('fig/mnist_mlprbf_legitimate.png')
+        plt.bar(betas, testAccuracy, align='center')
+        plt.xticks(y_pos, betas)
+        plt.ylabel('Accuracy')
+        plt.ylim(0,100)
+        plt.title('Accuracy on Legitimate Samples')
+        #plt.show()
+        plt.savefig('fig/'+data+'_'+arch+'_legitimate.png')
+        plt.clf()
+        plt.cla()
+        plt.close()
+        
+        testAccuracy = []
+        adversarialAccuracy = []
+
+
 
 
 

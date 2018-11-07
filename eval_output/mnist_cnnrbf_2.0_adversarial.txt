@@ -1,0 +1,8 @@
+Loaded MNIST test data.
+Load model ... 
+Test accuracy on legitimate test examples: 0.9878
+Test accuracy on adversarial test examples: 0.7618
+Loaded MNIST test data.
+Load model ... 
+Test accuracy on legitimate test examples: 0.9884
+Test accuracy on adversarial test examples: 0.9536

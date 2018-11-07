@@ -52,7 +52,7 @@ if __name__ == '__main__':
     Y_train = np_utils.to_categorical(y_train, 10)
     Y_test = np_utils.to_categorical(y_test, 10)
 
-    # mlp('mlp_test', X_train.reshape(60000, 784), Y_train, X_test.reshape(10000, 784), Y_test)
-    cnn('cnn_test', X_train.reshape(60000, 28, 28, 1), Y_train, X_test.reshape(10000, 28, 28, 1), Y_test)
+    # mlp('mnist_mlp', X_train.reshape(60000, 784), Y_train, X_test.reshape(10000, 784), Y_test)
+    cnn('mnist_cnn', X_train.reshape(60000, 28, 28, 1), Y_train, X_test.reshape(10000, 28, 28, 1), Y_test)
 
     

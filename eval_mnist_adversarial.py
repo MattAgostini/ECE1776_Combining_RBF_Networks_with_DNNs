@@ -43,8 +43,10 @@ def eval(sess, model_name, X_train, Y_train, X_test, Y_test, cnn=False, rbf=Fals
     '''
     if rbf:
         loaded_model = load_model("rbfmodels/{}.h5".format(model_name), custom_objects={'RBFLayer': RBFLayer})
+        text_file.write('Evaluating on rbfmodels/{}.h5\n\n'.format(model_name))
     else:
         loaded_model = load_model("models/{}.h5".format(model_name))
+        text_file.write('Evaluating on models/{}.h5\n\n'.format(model_name))
 
     # Set placeholders
     if cnn:

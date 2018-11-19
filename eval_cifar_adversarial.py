@@ -108,6 +108,8 @@ def eval(sess, model_name, X_train, Y_train, X_test, Y_test, cnn=False, rbf=Fals
         #print('Test accuracy on df adversarial test examples: ' + str(accuracy))
 
     # Basic Iterative Method
+    # Commented out as it is hanging on batch #0 at the moment
+    '''
     if bim:
         bim = ProjectedGradientDescent(wrap, sess=sess)
         bim_params = {'eps': 0.3}
@@ -119,7 +121,7 @@ def eval(sess, model_name, X_train, Y_train, X_test, Y_test, cnn=False, rbf=Fals
         accuracy = model_eval(sess, x, y, preds_adv, X_test, Y_test, args={ "batch_size" : 128})
         text_file.write('Test accuracy on bim adversarial test examples: {0}\n'.format(str(accuracy)))
         #print('Test accuracy on bim adversarial test examples: ' + str(accuracy))
-
+    '''
     print('Accuracy results outputted to cifar10_results.txt')
     text_file.close()
 

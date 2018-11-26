@@ -52,7 +52,7 @@ def add_rbf_layer(model, betas, X_train, Y_train, X_test, Y_test):
     #model.compile(loss='mean_squared_error',
     #              optimizer=SGD(lr=0.1, decay=1e-6))
 
-    init_weights = False
+    init_weights = True
 
     if (init_weights):
         #gmm
@@ -68,12 +68,13 @@ def add_rbf_layer(model, betas, X_train, Y_train, X_test, Y_test):
         betas = np.zeros(num_clusters,)
 
         #p closest neighbours
-        knn = NearestNeighbors(n_neighbors=P, algorithm='ball_tree').fit(obs)
-        distances, indices = knn.kneighbors(centers)
-        for i, distance in enumerate(distances):
-            betas[i] = np.sum(distance) * 1./P
+        # knn = NearestNeighbors(n_neighbors=P, algorithm='ball_tree').fit(obs)
+        # distances, indices = knn.kneighbors(centers)
+        # for i, distance in enumerate(distances):
+        #     betas[i] = np.sum(distance) * 1./P
 
-        print(betas)
+        # print(betas)
+        betas = np.full((num_clusters,),1.8,dtype='f')
         weights = [centers, betas]
         rbflayer.set_weights(weights)
 

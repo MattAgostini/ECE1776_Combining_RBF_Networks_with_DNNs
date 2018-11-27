@@ -29,19 +29,19 @@ def add_rbf_layer(model, betas, X_train, Y_train, X_test, Y_test):
     """
     
     newmodel = Sequential() 
-    for i in range(len(model.layers)):
+    for i in range(len(model.layers)-1):
         newmodel.add(model.layers[i])
         
     for layer in newmodel.layers:
         layer.trainable = False
 
     obs = newmodel.predict(X_train)
-    num_clusters = 30
+    num_clusters = 50
+
     rbflayer = RBFLayer(num_clusters, betas=betas)
     newmodel.add(rbflayer)
 
-    newmodel.add(Dense(10, use_bias=False, name="dense_rbf"))
-    newmodel.add(Activation('softmax', name="Activation_rbf"))
+    newmodel.add(Dense(10, use_bias=False, name="dense_rbf", activation='softmax'))
 
     newmodel.compile(loss='categorical_crossentropy',
                      optimizer=Adam(lr=0.0001),
@@ -73,14 +73,18 @@ def add_rbf_layer(model, betas, X_train, Y_train, X_test, Y_test):
         # for i, distance in enumerate(distances):
         #     betas[i] = np.sum(distance) * 1./P
 
-        # print(betas)
-        betas = np.full((num_clusters,),1.8,dtype='f')
+        #maximum distance
+        norms = np.linalg.norm(obs, axis=1)
+        max_dist = np.max(norms)
+        scaled_dist = max_dist*1.5
+        print('max_dist:', max_dist)
+        betas = np.full((num_clusters,),2./scaled_dist,dtype='f')
         weights = [centers, betas]
         rbflayer.set_weights(weights)
 
     newmodel.fit(X_train, Y_train,
                  batch_size=128,
-                 epochs=8,
+                 epochs=10,
                  verbose=1)
 
 

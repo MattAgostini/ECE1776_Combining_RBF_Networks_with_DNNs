@@ -3,13 +3,15 @@ from keras.models import Sequential, load_model
 from keras.layers.core import Dense, Activation, Dropout
 from keras.layers import Convolution2D, MaxPooling2D, Flatten
 from keras.layers.normalization import BatchNormalization
-from keras.optimizers import RMSprop, SGD
+from keras.optimizers import RMSprop, SGD, Adam
 from keras.datasets import mnist
 from keras.utils import np_utils
 from rbflayer import RBFLayer, InitCentersRandom
 import matplotlib.pyplot as plt
 import argparse
-
+from sklearn import mixture
+from sklearn.cluster import KMeans
+from sklearn.neighbors import NearestNeighbors
 
 def accuracy_score(y1, y2):
     assert y1.shape == y2.shape
@@ -27,19 +29,22 @@ def add_rbf_layer(model, betas, X_train, Y_train, X_test, Y_test):
     """
     
     newmodel = Sequential() 
-    for i in range(len(model.layers)):
+    for i in range(len(model.layers)-1):
         newmodel.add(model.layers[i])
         
-    #    for layer in newmodel.layers:
-    #        layer.trainable = False
+    for layer in newmodel.layers:
+        layer.trainable = False
 
-    rbflayer = RBFLayer(300, betas=betas)
+    obs = newmodel.predict(X_train)
+    num_clusters = 50
+
+    rbflayer = RBFLayer(num_clusters, betas=betas)
     newmodel.add(rbflayer)
-    newmodel.add(Dense(10, use_bias=False, name="dense_rbf"))
-    newmodel.add(Activation('softmax', name="Activation_rbf"))
+
+    newmodel.add(Dense(10, use_bias=False, name="dense_rbf", activation='softmax'))
 
     newmodel.compile(loss='categorical_crossentropy',
-                     optimizer=RMSprop(),
+                     optimizer=Adam(lr=0.0001),
                      metrics=['acc'])
 
     newmodel.summary()
@@ -47,9 +52,39 @@ def add_rbf_layer(model, betas, X_train, Y_train, X_test, Y_test):
     #model.compile(loss='mean_squared_error',
     #              optimizer=SGD(lr=0.1, decay=1e-6))
 
+    init_weights = True
+
+    if (init_weights):
+        #gmm
+        # gmm = mixture.GaussianMixture(n_components=num_clusters, covariance_type='spherical')
+        # gmm.fit(obs)
+        # centers = gmm.means_
+        # betas = np.linalg.inv(gmm.covariances_)
+        # betas = 1./gmm.covariances_
+       
+        #kmeans
+        kmeans = KMeans(n_clusters=num_clusters, precompute_distances=True, n_init=10).fit(obs)
+        centers = kmeans.cluster_centers_
+        betas = np.zeros(num_clusters,)
+
+        #p closest neighbours
+        # knn = NearestNeighbors(n_neighbors=P, algorithm='ball_tree').fit(obs)
+        # distances, indices = knn.kneighbors(centers)
+        # for i, distance in enumerate(distances):
+        #     betas[i] = np.sum(distance) * 1./P
+
+        #maximum distance
+        norms = np.linalg.norm(obs, axis=1)
+        max_dist = np.max(norms)
+        scaled_dist = max_dist*1.5
+        print('max_dist:', max_dist)
+        betas = np.full((num_clusters,),2./scaled_dist,dtype='f')
+        weights = [centers, betas]
+        rbflayer.set_weights(weights)
+
     newmodel.fit(X_train, Y_train,
                  batch_size=128,
-                 epochs=3,
+                 epochs=10,
                  verbose=1)
 
 
@@ -105,6 +140,7 @@ if __name__ == "__main__":
 
     print("---test----")
     m = load_model("rbfmodels/{}.h5".format(output_model_name), custom_objects={'RBFLayer': RBFLayer})
-
+    print(m.layers[-3].get_weights()[1])
+    # import pdb; pdb.set_trace()
     Y_pred = m.predict(X_test)
     print("Test Accuracy: ", accuracy_score(Y_pred, Y_test)) 
